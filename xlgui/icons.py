@@ -638,22 +638,25 @@ class IconManager(object):
             icon_size = Gtk.icon_size_lookup(size)
             size = icon_size[1]
 
-        try:
-            pixbuf = self.icon_theme.load_icon(
-                icon_name,
-                size,
-                Gtk.IconLookupFlags.NO_SVG | Gtk.IconLookupFlags.FORCE_SIZE,
-            )
-        except GLib.GError as e:
-            logger.warning(
-                'Failed to get pixbuf from "{icon_name}": {error}'.format(
-                    icon_name=icon_name, error=e.message
-                )
-            )
-            pixbuf = None
+        if icon_name.endswith('-symbolic'):
+            fallback_name = icon_name[:-9]
+        else:
+            fallback_name = icon_name + '-symbolic'
 
-        # TODO: Check if fallbacks are necessary
-        return pixbuf
+        icon_info = self.icon_theme.choose_icon(
+            [icon_name, fallback_name],
+            size,
+            Gtk.IconLookupFlags.USE_BUILTIN | Gtk.IconLookupFlags.FORCE_SIZE,
+        )
+        if icon_info:
+            try:
+                return icon_info.load_icon()
+            except GLib.GError as e:
+                logger.warning('Failed to load icon "%s": %s', icon_name, e.message)
+        else:
+            logger.warning('Icon "%s" not found', icon_name)
+
+        return None
 
     @common.cached(limit=settings.get_option('rating/maximum', 5) * 3)
     def pixbuf_from_rating(self, rating, size_ratio=1):
