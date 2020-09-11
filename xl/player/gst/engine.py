@@ -27,8 +27,10 @@
 
 from gi.repository import GLib
 from gi.repository import Gst
+from gi.repository import GstAudio
 
 import logging
+import math
 import os
 import urllib.parse
 
@@ -546,7 +548,11 @@ class AudioStream:
         # self.logger.debug("Set playbin volume: %.2f", volume)
         # TODO: strange issue where pulse sets the system audio volume
         #       when exaile starts up...
-        self.playbin.props.volume = volume
+        # When we set the volume format to cubic, it results in a linear
+        # scaling in pavucontrol! Most likely a bug in gstreamer or its
+        # python bindings
+        GstAudio.StreamVolume.set_volume (
+                self.playbin, GstAudio.StreamVolumeFormat.CUBIC, volume)
 
     def set_user_volume(self, volume):
         self.logger.debug("Set user volume: %.2f", volume)
@@ -735,5 +741,5 @@ class AudioStream:
     def on_volume_change(self, e, p):
         real = self.playbin.props.volume
         vol, is_same = self.fader.calculate_user_volume(real)
-        if not is_same:
+        if not math.isclose(real, vol, rel_tol=0.0001):
             GLib.idle_add(self.engine.player.engine_notify_user_volume_change, vol)
