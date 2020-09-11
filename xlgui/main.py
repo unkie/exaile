@@ -979,7 +979,7 @@ class MainWindow(GObject.GObject):
 
     def _on_volume_key(self, is_up):
         diff = int(
-            100 * settings.get_option('gui/volue_key_step_size', VOLUME_STEP_DEFAULT)
+            100 * settings.get_option('gui/volume_key_step_size', VOLUME_STEP_DEFAULT)
         )
         if not is_up:
             diff = -diff
